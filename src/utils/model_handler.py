@@ -64,7 +64,8 @@ def generate_code(
             # Check cancellation flag
             if cancellation_flag[0]:
                 yield "\n## Generation stopped by user"
-                raise CancellationError()
+                return
+
             
             chunk_text = chunk.get('response', '')
             

@@ -162,23 +162,32 @@ def format_history(messages):
             formatted.append((msg["content"], None))
         else:
             content = msg["content"]
-            if "```" in content:
-                lang_match = next((l for l in ["python", "javascript", "java", "c++", "rust", "go"] 
-                                 if f"```{l}" in content.lower()), "")
-                if lang_match:
-                    try:
-                        code_content = content.split("```")[1].split("\n", 1)[1]
-                        lexer = get_lexer_by_name(lang_match, stripall=True)
-                        formatter = HtmlFormatter(style="monokai", noclasses=True)
-                        highlighted = highlight(code_content, lexer, formatter)
-                        content = f"```{lang_match}\n{highlighted}\n```"
-                    except Exception:
-                        pass
+            parts = content.split("```")
+            new_content = ""
+            for i, part in enumerate(parts):
+                if i % 2 == 1:  # Code block
+                    lang_match = next((l for l in ["python", "javascript", "java", "c++", "rust", "go"]
+                                     if part.lower().startswith(l)), "")
+                    if lang_match:
+                        try:
+                            code_content = part.split("\n", 1)[1]
+                            lexer = get_lexer_by_name(lang_match, stripall=True)
+                            formatter = HtmlFormatter(style="monokai", noclasses=True)
+                            highlighted = highlight(code_content, lexer, formatter)
+                            new_content += f"<pre>{highlighted}</pre>"
+                        except Exception:
+                            new_content += f"<pre>{part}</pre>"
+                    else:
+                        new_content += f"<pre>{part}</pre>"
+                else:
+                    new_content += part  # Plain text
+
             if formatted and formatted[-1][1] is None:
-                formatted[-1] = (formatted[-1][0], content)
+                formatted[-1] = (formatted[-1][0], new_content)
             else:
-                formatted.append((None, content))
+                formatted.append((None, new_content))
     return formatted
+
 
 def respond(message, chat_history, language, temperature, cancel_flag):
     try:
@@ -208,10 +217,16 @@ def respond(message, chat_history, language, temperature, cancel_flag):
         full_response = ""
         # Pass cancellation flag to generate_code
         for chunk in generate_code(message, language, temperature, cancel_flag):
+            if cancel_flag[0]:
+                formatted_history.append({"role": "assistant", "content": "⏹️ Generation stopped."})
+                yield format_history(formatted_history), "", gr.Button(visible=True), gr.Button(visible=False)
+                return
+
             full_response += chunk
             formatted_history.append({"role": "assistant", "content": full_response})
             yield format_history(formatted_history), "", gr.Button(visible=False), gr.Button(visible=True)
             formatted_history.pop()
+
         
         formatted_history.append({"role": "assistant", "content": full_response})
         yield format_history(formatted_history), "", gr.Button(visible=True), gr.Button(visible=False)
@@ -221,31 +236,20 @@ def respond(message, chat_history, language, temperature, cancel_flag):
         yield format_history(formatted_history), "", gr.Button(visible=True), gr.Button(visible=False)
 
 def cancel_generation(cancel_flag):
+    cancel_flag[0] = True
     return [True]
+
 
 def new_chat():
     return [], "", [False], gr.Button(visible=True), gr.Button(visible=False)
 
-
-# Chatbot component with proper configuration
-chatbot = gr.Chatbot(
-    elem_classes=["chat-container"],
-    avatar_images=(
-        ("https://i.ibb.co/rdXC7HZ/user-avatar.png", "user"),
-        ("https://i.ibb.co/98d7Y4s/ai-avatar.png", "assistant")
-    ),
-    height="70vh",
-    show_label=False,
-    render_markdown=True,  # Enable Markdown rendering
-    sanitize_html=False,    # Allow code blocks
-    type="messages"
-)
 with gr.Blocks(
     theme=gr.themes.Soft(primary_hue="purple"),
     css=custom_css,
     title="CodeGen AI"
 ) as demo:
     cancel_flag = gr.State([False])
+    gr.HTML("<link rel='icon' href='./static/images/deepseek-icon.jpeg'>")
     
     with gr.Row():
         with gr.Column(scale=1, elem_classes=["sidebar"]):
@@ -284,8 +288,8 @@ with gr.Blocks(
             chatbot = gr.Chatbot(
                 elem_classes=["chat-container"],
                 avatar_images=(
-                    ("https://i.ibb.co/rdXC7HZ/user-avatar.png", "user"),
-                    ("https://i.ibb.co/98d7Y4s/ai-avatar.png", "assistant")
+                    ("https://img.icons8.com/?size=100&id=kDoeg22e5jUY&format=png&color=000000", "user"),
+                    ("https://img.icons8.com/?size=100&id=THRPlyXrzBJk&format=png&color=000000", "assistant")
                 ),
                 height="70vh",
                 show_label=False
@@ -313,11 +317,12 @@ with gr.Blocks(
         [chatbot, msg, btn, stop_btn],
     )
     stop_btn.click(
-    fn=lambda flag: [True],  # Immediate cancellation
-    inputs=cancel_flag,
-    outputs=cancel_flag,
+    fn=cancel_generation,
+    inputs=[cancel_flag],
+    outputs=[cancel_flag],
     queue=False
-    )
+)
+
     new_chat_btn.click(
         new_chat,
         outputs=[chatbot, msg, cancel_flag, btn, stop_btn]
