@@ -74,6 +74,17 @@ custom_css = """
     border-radius: 16px !important;
 }
 
+.links a {
+    color: #000000 !important;
+    text-decoration: none !important;
+    font-weight: 500 !important;
+    font-size: 0.9rem !important;
+    text-align: center !important;
+    display: block !important;
+    transition: color 0.2s ease !important;
+    margin: 0.5rem 0 !important;
+}
+
 .send-btn {
     transition: transform 0.2s ease !important;
 }
@@ -168,7 +179,7 @@ def format_history(messages):
             new_content = ""
             for i, part in enumerate(parts):
                 if i % 2 == 1:  # Code block
-                    lang_match = next((l for l in ["python", "javascript", "java", "c++", "rust", "go"]
+                    lang_match = next((l for l in ["python", "javascript", "java", "c++", "rust", "go", "php", "c"]
                                      if part.lower().startswith(l)), "")
                     if lang_match:
                         try:
@@ -254,6 +265,16 @@ with gr.Blocks(
     # gr.HTML("<link rel='icon' href='./static/images/deepseek-icon.jpeg'>")
     
     
+    # with gr.Row():
+    with gr.Row(elem_classes=["header"]):
+        gr.Markdown("""
+        <div style="text-align: center; padding: 2rem 0;">
+            <h1 style="font-size: 2.5rem; margin: 0; background: linear-gradient(135deg, #6366f1, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                🚀 CodeGen Pro
+            </h1>
+        </div>
+        """)
+    
     with gr.Row():
         with gr.Column(scale=1, elem_classes=["sidebar"]):
             gr.Markdown("""
@@ -267,7 +288,7 @@ with gr.Blocks(
             gr.Markdown("---")
             gr.Markdown("**Settings**")
             language = gr.Dropdown(
-                ["Python", "JavaScript", "Java", "C++", "Rust", "Go"],
+                ["Python", "JavaScript", "Java", "C++", "Rust", "Go", "PHP", "C"],
                 value="Python",
                 label="Programming Language"
             )
@@ -277,16 +298,18 @@ with gr.Blocks(
                 info="Lower = More Factual, Higher = More Creative"
             )
             gr.Markdown("---")
-            gr.Markdown("📖 [Documentation](https://example.com)  \n📩 [Support](mailto:support@example.com)")
+            gr.Markdown(
+                """
+                <div class="links">
+                    <a href="https://example.com">📖 Documentation</a>
+                    <a href="mailto:support@example.com">📩 Support</a>
+                </div>
+                """,
+                elem_classes="links"
+            )
 
         with gr.Column(scale=4):
-            gr.Markdown("""
-            <div style="text-align: center; padding: 2rem 0;">
-                <h1 style="font-size: 2.5rem; margin: 0; background: linear-gradient(135deg, #6366f1, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                    🚀 CodeGen Pro
-                </h1>
-            </div>
-            """)
+            
             
             chatbot = gr.Chatbot(
                 elem_classes=["chat-container"],
