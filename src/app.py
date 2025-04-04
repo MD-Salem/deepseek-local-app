@@ -112,11 +112,13 @@ custom_css = """
 }
 
 .logo {
-    width: 60px;
-    height: 60px;
-    margin-bottom: 1rem;
+    display: block;
+    margin: 0 auto 1rem auto;
+    width: 90px;
+    height: 90px;
     animation: float 3s ease-in-out infinite;
 }
+
 
 @keyframes float {
     0% { transform: translateY(0px); }
@@ -249,13 +251,14 @@ with gr.Blocks(
     title="CodeGen AI"
 ) as demo:
     cancel_flag = gr.State([False])
-    gr.HTML("<link rel='icon' href='./static/images/deepseek-icon.jpeg'>")
+    # gr.HTML("<link rel='icon' href='./static/images/deepseek-icon.jpeg'>")
+    
     
     with gr.Row():
         with gr.Column(scale=1, elem_classes=["sidebar"]):
             gr.Markdown("""
             <div class="logo-container">
-                <img src="https://i.ibb.co/3zt7PVx/spinner.png" class="logo"/>
+                <img src="https://sdmntprukwest.oaiusercontent.com/files/00000000-ea64-5243-a23f-61e2241027ec/raw?se=2025-04-04T23%3A15%3A54Z&sp=r&sv=2024-08-04&sr=b&scid=ef21cb15-3d9d-5b0c-94f8-b18b6d5d9cf2&skoid=9370dd2b-ca43-4270-bed5-18b1b71f8fa0&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-04-04T09%3A09%3A13Z&ske=2025-04-05T09%3A09%3A13Z&sks=b&skv=2024-08-04&sig=n3%2B8C/oKDDIgL%2Bi4TmBeBdBGiX7yfzPu3a0uRy%2BwuUw%3D" class="logo"/>
                 <h3 style="color: white; margin: 0;">CodeGen Pro</h3>
             </div>
             """)
@@ -287,10 +290,8 @@ with gr.Blocks(
             
             chatbot = gr.Chatbot(
                 elem_classes=["chat-container"],
-                avatar_images=(
-                    ("https://img.icons8.com/?size=100&id=kDoeg22e5jUY&format=png&color=000000", "user"),
-                    ("https://img.icons8.com/?size=100&id=THRPlyXrzBJk&format=png&color=000000", "assistant")
-                ),
+                avatar_images= ["src/static/images/happyuser.png", "src/static/images/deepseek-icon.jpeg"],
+
                 height="70vh",
                 show_label=False
             )
@@ -332,6 +333,6 @@ if __name__ == "__main__":
     demo.launch(
         server_name="127.0.0.1",
         server_port=7860,
-        favicon_path="favicon.ico",
+        favicon_path="src/static/images/deepseek-icon.jpeg",
         show_error=True
     )
