@@ -1,74 +1,361 @@
+# app.py
 import gradio as gr
 from utils.model_handler import generate_code
-import os
+from pygments import highlight
+from pygments.lexers import get_lexer_by_name
+from pygments.formatters import HtmlFormatter
 
-# Custom CSS with Tailwind
-CSS = """
-@import url('https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css');
-
-.gradio-container {
-    @apply bg-gradient-to-br from-gray-900 to-blue-900 min-h-screen;
+custom_css = """
+:root {
+    --gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
 }
 
-.dark .input-text textarea {
-    @apply bg-gray-800 text-white border-gray-700 !important;
+/* Chat bubbles */
+.dark .user, .dark .assistant {
+    color: white !important;
 }
 
-.code-output pre {
-    @apply bg-gray-800 p-4 rounded-lg text-green-400 overflow-x-auto;
+.user {
+    background: #4f46e5 !important;
+    border-radius: 20px 20px 4px 20px !important;
+    margin-left: auto !important;
+    max-width: 80%;
+    animation: slideInRight 0.3s ease-out;
 }
+
+.assistant {
+    background: #3730a3 !important;
+    border-radius: 20px 20px 20px 4px !important;
+    margin-right: auto !important;
+    max-width: 80%;
+    animation: slideInLeft 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+    from { transform: translateX(20px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideInLeft {
+    from { transform: translateX(-20px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+/* Typing animation */
+.typing-indicator {
+    display: inline-flex;
+    gap: 4px;
+    padding: 12px;
+    background: #3730a3 !important;
+    border-radius: 20px;
+}
+
+.typing-dot {
+    width: 8px;
+    height: 8px;
+    background: rgba(255,255,255,0.6);
+    border-radius: 50%;
+    animation: typing-dot 1.4s infinite ease-in-out;
+}
+
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typing-dot {
+    0%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-6px); }
+}
+
+/* Input area */
+.dark .input-box {
+    background: rgba(255,255,255,0.05) !important;
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    border-radius: 16px !important;
+}
+
+.links a {
+    color: #000000 !important;
+    text-decoration: none !important;
+    font-weight: 500 !important;
+    font-size: 0.9rem !important;
+    text-align: center !important;
+    display: block !important;
+    transition: color 0.2s ease !important;
+    margin: 0.5rem 0 !important;
+}
+
+.send-btn {
+    transition: transform 0.2s ease !important;
+}
+
+.send-btn:hover {
+    transform: translateY(-2px) scale(1.05);
+}
+
+.stop-btn {
+    background: #dc2626 !important;
+    border-color: #dc2626 !important;
+}
+
+.stop-btn:hover {
+    background: #b91c1c !important;
+    transform: scale(0.98) !important;
+}
+
+/* Sidebar styling */
+.sidebar {
+    background: var(--gradient) !important;
+    padding: 1.5rem !important;
+    border-radius: 0 16px 16px 0 !important;
+    box-shadow: 4px 0 15px rgba(0,0,0,0.1);
+}
+
+.sidebar .button {
+    width: 100%;
+    margin: 8px 0 !important;
+    justify-content: center !important;
+}
+
+.logo-container {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.logo {
+    display: block;
+    margin: 0 auto 1rem auto;
+    width: 90px;
+    height: 90px;
+    animation: float 3s ease-in-out infinite;
+}
+
+
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0px); }
+}
+
+.loading-spinner {
+    animation: spin 1s linear infinite;
+    width: 24px;
+    height: 24px;
+    margin-left: 8px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Code syntax highlighting */
+pre code.hljs {
+    padding: 1rem !important;
+    border-radius: 12px !important;
+    background: #1e1e1e !important;
+}
+
+.dark .hljs {
+    color: #d4d4d4 !important;
+}
+
+.hljs-keyword { color: #569CD6; }
+.hljs-built_in { color: #4EC9B0; }
+.hljs-string { color: #CE9178; }
+.hljs-function { color: #DCDCAA; }
+.hljs-params { color: #9CDCFE; }
+.hljs-comment { color: #6A9955; }
 """
 
-with gr.Blocks(title="DeepSeek Local Coder", css=CSS) as app:
-    
-    with gr.Row(equal_height=True, variant="panel"):
-        gr.Markdown("""<h1 style="text-align: center; color: white; font-size: 1.875rem;">🚀 DeepSeek Code Generator</h1>""")
-    with gr.Row():
-        with gr.Column(scale=1):
-            gr.Markdown("""<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-            <rect width="200" height="200" rx="30" fill="#1a1a2e"/>
-            <path d="M100 50 L150 100 L100 150 L50 100 Z" fill="none" stroke="#00dcff" stroke-width="8"/>
-            <circle cx="100" cy="100" r="20" fill="#00dcff" opacity="0.8"/>
-            <text x="100" y="180" font-family="Arial" font-size="20" fill="white" text-anchor="middle">DeepSeek</text>
-            </svg>""")
-            gr.Markdown("### ⚙️ Settings")
-            language = gr.Dropdown(
-                choices=["Python", "JavaScript", "Go", "Rust", "Java"],
-                value="Python",
-                label="Language",
-                elem_classes="bg-gray-800 text-white"
-            )
-            temperature = gr.Slider(0, 1, value=0.3, label="Creativity Level")
-            
-        with gr.Column(scale=3):
-            prompt = gr.Textbox(
-                label="Describe your code needs",
-                placeholder="Ex: 'A Python function to calculate prime numbers'",
-                lines=3,
-                elem_classes="input-text"
-            )
-            output = gr.Code(
-                label="Generated Code",
-                language=language.value.lower(),
-                elem_classes="code-output"
-            )
-    
-    with gr.Row():
-        submit_btn = gr.Button(
-            "Generate Code →",
-            variant="primary",
-            elem_classes="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full"
-        )
-        clear_btn = gr.Button("Clear", elem_classes="bg-gray-600 hover:bg-gray-700")
+def format_history(messages):
+    formatted = []
+    for msg in messages:
+        if msg["role"] == "user":
+            formatted.append((msg["content"], None))
+        else:
+            content = msg["content"]
+            parts = content.split("```")
+            new_content = ""
+            for i, part in enumerate(parts):
+                if i % 2 == 1:  # Code block
+                    lang_match = next((l for l in ["python", "javascript", "java", "c++", "rust", "go", "php", "c"]
+                                     if part.lower().startswith(l)), "")
+                    if lang_match:
+                        try:
+                            code_content = part.split("\n", 1)[1]
+                            lexer = get_lexer_by_name(lang_match, stripall=True)
+                            formatter = HtmlFormatter(style="monokai", noclasses=True)
+                            highlighted = highlight(code_content, lexer, formatter)
+                            new_content += f"<pre>{highlighted}</pre>"
+                        except Exception:
+                            new_content += f"<pre>{part}</pre>"
+                    else:
+                        new_content += f"<pre>{part}</pre>"
+                else:
+                    new_content += part  # Plain text
 
-    submit_btn.click(
-        fn=generate_code,
-        inputs=[prompt, language, temperature],
-        outputs=output
-    )
+            if formatted and formatted[-1][1] is None:
+                formatted[-1] = (formatted[-1][0], new_content)
+            else:
+                formatted.append((None, new_content))
+    return formatted
+
+
+def respond(message, chat_history, language, temperature, cancel_flag):
+    try:
+        cancel_flag[0] = False  # Reset cancellation flag
+        formatted_history = [
+            {"role": "user" if who else "assistant", "content": content}
+            for entry in chat_history
+            for content, who in [(entry[0], True), (entry[1], False)]
+            if content is not None
+        ]
+        
+        formatted_history.append({"role": "user", "content": message})
+        
+        # Add typing indicator
+        formatted_history.append({
+            "role": "assistant", 
+            "content": """<div class="typing-indicator">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            </div>"""
+        })
+        
+        yield format_history(formatted_history), "", gr.Button(visible=False), gr.Button(visible=True)
+        formatted_history.pop()
+        
+        full_response = ""
+        # Pass cancellation flag to generate_code
+        for chunk in generate_code(message, language, temperature, cancel_flag):
+            if cancel_flag[0]:
+                formatted_history.append({"role": "assistant", "content": "⏹️ Generation stopped."})
+                yield format_history(formatted_history), "", gr.Button(visible=True), gr.Button(visible=False)
+                return
+
+            full_response += chunk
+            formatted_history.append({"role": "assistant", "content": full_response})
+            yield format_history(formatted_history), "", gr.Button(visible=False), gr.Button(visible=True)
+            formatted_history.pop()
+
+        
+        formatted_history.append({"role": "assistant", "content": full_response})
+        yield format_history(formatted_history), "", gr.Button(visible=True), gr.Button(visible=False)
+        
+    except Exception as e:
+        formatted_history.append({"role": "assistant", "content": f"❌ Error: {str(e)}"})
+        yield format_history(formatted_history), "", gr.Button(visible=True), gr.Button(visible=False)
+
+def cancel_generation(cancel_flag):
+    cancel_flag[0] = True
+    return [True]
+
+
+def new_chat():
+    return [], "", [False], gr.Button(visible=True), gr.Button(visible=False)
+
+with gr.Blocks(
+    theme=gr.themes.Soft(primary_hue="purple"),
+    css=custom_css,
+    title="CodeGen AI"
+) as demo:
+    cancel_flag = gr.State([False])
+    # gr.HTML("<link rel='icon' href='./static/images/deepseek-icon.jpeg'>")
     
-    clear_btn.click(lambda: [None, None, 0.3], outputs=[prompt, output, temperature])
+    
+    # with gr.Row():
+    with gr.Row(elem_classes=["header"]):
+        gr.Markdown("""
+        <div style="text-align: center; padding: 2rem 0;">
+            <h1 style="font-size: 2.5rem; margin: 0; background: linear-gradient(135deg, #6366f1, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                🚀 CodeGen Pro
+            </h1>
+        </div>
+        """)
+    
+    with gr.Row():
+        with gr.Column(scale=1, elem_classes=["sidebar"]):
+            gr.Markdown("""
+            <div class="logo-container">
+                <img src="https://sdmntprukwest.oaiusercontent.com/files/00000000-ea64-5243-a23f-61e2241027ec/raw?se=2025-04-06T20%3A24%3A48Z&sp=r&sv=2024-08-04&sr=b&scid=413ff5ad-2531-5d80-9a58-a6d1ebde54bd&skoid=9370dd2b-ca43-4270-bed5-18b1b71f8fa0&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-04-06T08%3A15%3A13Z&ske=2025-04-07T08%3A15%3A13Z&sks=b&skv=2024-08-04&sig=yZgJ6d3k3EaAL3p7Z3olHjI4EvLmwt%2Bkzjm/tUh2/0c%3D" class="logo"/>
+                <h3 style="color: white; margin: 0;">CodeGen Pro</h3>
+            </div>
+            """)
+            
+            new_chat_btn = gr.Button("🔄 New Chat", variant="secondary")
+            gr.Markdown("---")
+            gr.Markdown("**Settings**")
+            language = gr.Dropdown(
+                ["Python", "JavaScript", "Java", "C++", "Rust", "Go", "PHP", "C"],
+                value="Python",
+                label="Programming Language"
+            )
+            temperature = gr.Slider(
+                0.1, 1.0, value=0.7,
+                label="Creativity Level",
+                info="Lower = More Factual, Higher = More Creative"
+            )
+            gr.Markdown("---")
+            gr.Markdown(
+                """
+                <div class="links">
+                    <a href="https://example.com">📖 Documentation</a>
+                    <a href="mailto:support@example.com">📩 Support</a>
+                </div>
+                """,
+                elem_classes="links"
+            )
+
+        with gr.Column(scale=4):
+            
+            
+            chatbot = gr.Chatbot(
+                elem_classes=["chat-container"],
+                avatar_images= ["src/static/images/happyuser.png", "src/static/images/deepseek-icon.jpeg"],
+
+                height="70vh",
+                show_label=False
+            )
+            
+            with gr.Row(elem_classes=["input-box"]):
+                with gr.Column(scale=4):
+                    msg = gr.Textbox(
+                        placeholder="Describe the code you want to generate...",
+                        show_label=False,
+                        container=False
+                    )
+                with gr.Column(scale=1):
+                    btn = gr.Button("Generate Code", variant="primary", elem_classes=["send-btn"], visible=True)
+                    stop_btn = gr.Button("⏹ Stop", variant="stop", elem_classes=["stop-btn"], visible=False)
+
+    msg.submit(
+        respond,
+        [msg, chatbot, language, temperature, cancel_flag],
+        [chatbot, msg, btn, stop_btn],
+    )
+    btn.click(
+        respond,
+        [msg, chatbot, language, temperature, cancel_flag],
+        [chatbot, msg, btn, stop_btn],
+    )
+    stop_btn.click(
+    fn=cancel_generation,
+    inputs=[cancel_flag],
+    outputs=[cancel_flag],
+    queue=False
+)
+
+    new_chat_btn.click(
+        new_chat,
+        outputs=[chatbot, msg, cancel_flag, btn, stop_btn]
+    )
 
 if __name__ == "__main__":
-    app.launch(server_name="127.0.0.1", server_port=7860, share=True)
-
+    demo.launch(
+        server_name="127.0.0.1",
+        server_port=7860,
+        favicon_path="src/static/images/deepseek-icon.jpeg",
+        show_error=True
+    )
