@@ -9,6 +9,7 @@ DeepSeek Local App est un outil puissant conçu pour [brève description du proj
 - [Utilisation](#utilisation)
 - [Contribuer](#contribuer)
 - [Licence](#licence)
+- [Créateurs](#créateurs)
 
 ---
 
@@ -104,6 +105,17 @@ Les contributions sont les bienvenues ! Veuillez suivre ces étapes pour contrib
 ## Licence
 
 Ce projet est sous licence [MIT License](LICENSE).
+
+---
+
+## Créateurs
+
+Ce projet a été créé par :
+- **Mohamed Salem Deddah**
+- **Cheikh Mokhtar Maouloud**
+
+Pour toute question ou assistance, contactez-nous à l'adresse suivante :  
+**medsalmmedalyed@gmail.com**
 
 ---
 
