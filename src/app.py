@@ -279,7 +279,7 @@ with gr.Blocks(
         with gr.Column(scale=1, elem_classes=["sidebar"]):
             gr.Markdown("""
             <div class="logo-container">
-                <img src="https://sdmntprukwest.oaiusercontent.com/files/00000000-ea64-5243-a23f-61e2241027ec/raw?se=2025-04-04T23%3A15%3A54Z&sp=r&sv=2024-08-04&sr=b&scid=ef21cb15-3d9d-5b0c-94f8-b18b6d5d9cf2&skoid=9370dd2b-ca43-4270-bed5-18b1b71f8fa0&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-04-04T09%3A09%3A13Z&ske=2025-04-05T09%3A09%3A13Z&sks=b&skv=2024-08-04&sig=n3%2B8C/oKDDIgL%2Bi4TmBeBdBGiX7yfzPu3a0uRy%2BwuUw%3D" class="logo"/>
+                <img src="https://sdmntprukwest.oaiusercontent.com/files/00000000-ea64-5243-a23f-61e2241027ec/raw?se=2025-04-06T20%3A24%3A48Z&sp=r&sv=2024-08-04&sr=b&scid=413ff5ad-2531-5d80-9a58-a6d1ebde54bd&skoid=9370dd2b-ca43-4270-bed5-18b1b71f8fa0&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-04-06T08%3A15%3A13Z&ske=2025-04-07T08%3A15%3A13Z&sks=b&skv=2024-08-04&sig=yZgJ6d3k3EaAL3p7Z3olHjI4EvLmwt%2Bkzjm/tUh2/0c%3D" class="logo"/>
                 <h3 style="color: white; margin: 0;">CodeGen Pro</h3>
             </div>
             """)
